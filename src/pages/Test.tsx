@@ -26,6 +26,7 @@ const Test = () => {
   const [userInput, setUserInput] = useState("");
   const [fontSize, setFontSize] = useState(FONT_SIZES[0]);
   const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [transitionScreen, setTransitionScreen] = useState(false);
   const [correctAnswersDetails, setCorrectAnswersDetails] = useState<string[]>([]);
   const [visionResults, setVisionResults] = useState<{
     rightEye: EyeResults | null;
@@ -34,6 +35,13 @@ const Test = () => {
     rightEye: null,
     leftEye: null
   });
+
+  // Start test with right eye first
+  useEffect(() => {
+    if (eyeToTest === null) {
+      startEyeTest("right");
+    }
+  }, [eyeToTest]);
 
   // Generate new letter each round
   useEffect(() => {
@@ -57,10 +65,13 @@ const Test = () => {
     setCurrentTest(0);
     setCorrectAnswers(0);
     setCorrectAnswersDetails([]);
-    setPreviousLetter(""); // FIX para evitar repetición inicial
+    setPreviousLetter("");
   };
 
   const handleNext = () => {
+    // Remove any existing toast notifications
+    toast.dismiss();
+
     const isCorrect = userInput.toUpperCase() === currentLetter;
 
     // Actualizar respuestas locales
@@ -81,7 +92,7 @@ const Test = () => {
       correctAnswers: newCorrectDetails
     };
 
-    // Si todavía hay más preguntas
+    // If there are more tests in the current eye
     if (currentTest < TOTAL_TESTS - 1) {
       setCorrectAnswers(newCorrectAnswers);
       setCorrectAnswersDetails(newCorrectDetails);
@@ -89,15 +100,21 @@ const Test = () => {
       return;
     }
 
-    // Si termina el ojo derecho
+    // If terminates the right eye
     if (eyeToTest === "right") {
       setVisionResults(prev => ({ ...prev, rightEye: currentEyeResults }));
-      toast.success("Ojo derecho completado. Ahora prueba el ojo izquierdo.");
-      startEyeTest("left");
+
+      setTransitionScreen(true);
+
+      setTimeout(() => {
+        setTransitionScreen(false);
+        startEyeTest("left");
+      }, 5000);
+
       return;
     }
 
-    // Si termina el ojo izquierdo
+    // If terminates the left eye
     if (eyeToTest === "left") {
       const finalResults = {
         rightEye: visionResults.rightEye || null,
@@ -119,32 +136,26 @@ const Test = () => {
 
   const progress = ((currentTest + 1) / TOTAL_TESTS) * 100;
 
-  // Eye selection screen
-  if (!eyeToTest) {
+  if (transitionScreen) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full space-y-8">
-          <div className="text-center space-y-4">
-            <h2 className="text-3xl font-bold text-foreground">Selecciona el ojo a evaluar</h2>
-            <p className="text-muted-foreground">
-              Realizarás la prueba para cada ojo por separado. Cubre un ojo mientras evalúas el otro.
-            </p>
-          </div>
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-6 max-w-md">
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Button size="lg" onClick={() => startEyeTest("right")} className="h-32 text-xl flex flex-col gap-2">
-              <span className="text-4xl">👁️</span>
-              <span>Ojo Derecho</span>
-            </Button>
-            <Button size="lg" onClick={() => startEyeTest("left")} className="h-32 text-xl flex flex-col gap-2">
-              <span className="text-4xl">👁️</span>
-              <span>Ojo Izquierdo</span>
-            </Button>
-          </div>
+          <h2 className="text-3xl font-bold text-foreground">
+            Evaluación del Ojo Derecho Completada
+          </h2>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Cubrirás el otro ojo durante la prueba
+          <p className="text-muted-foreground text-lg">
+            Ahora cubre tu ojo derecho para continuar con la evaluación.
           </p>
+
+          <p className="text-lg font-medium text-foreground">
+            Continuaremos con la prueba del Ojo Izquierdo.
+          </p>
+
+          <div className="pt-4">
+            <div className="mx-auto h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
         </div>
       </div>
     );
@@ -165,9 +176,15 @@ const Test = () => {
           <Progress value={progress} className="h-2" />
         </div>
 
-        <div className="bg-card rounded-2xl shadow-lg p-12 border border-border">
+        <p className="text-center text-sm text-muted-foreground">
+          {eyeToTest === "right"
+            ? "Cubre tu ojo izquierdo e identifica cada letra con tu OJO DERECHO"
+            : "Cubre tu ojo derecho e identifica cada letra con tu OJO IZQUIERDO"}
+        </p>
+
+        <div className="bg-card rounded-2xl shadow-md p-8 border border-border">
           <div className="text-center space-y-12">
-            <div className="min-h-[300px] flex items-center justify-center">
+            <div className="min-h-[220px] flex items-center justify-center">
               <p className="font-bold text-foreground select-none" style={{ fontSize: `${fontSize}rem`, lineHeight: 1.2 }}>
                 {currentLetter}
               </p>
@@ -198,12 +215,6 @@ const Test = () => {
             </div>
           </div>
         </div>
-
-        <p className="text-center text-sm text-muted-foreground">
-          {eyeToTest === "right"
-            ? "Cubre tu ojo izquierdo e identifica cada letra con tu ojo derecho"
-            : "Cubre tu ojo derecho e identifica cada letra con tu ojo izquierdo"}
-        </p>
       </div>
     </div>
   );
