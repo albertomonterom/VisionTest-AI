@@ -8,7 +8,7 @@ import { toast } from "sonner";
 const SNELLEN_LETTERS = ["C", "D", "E", "F", "H", "K", "N", "O", "P", "R", "T", "U", "V", "Z", "L"];
 const TOTAL_TESTS = 8;
 
-// Font sizes for digital test at 40-80 cm distance (in rem)
+// Font sizes for digital test (40-80 cm)
 const FONT_SIZES = [1.8, 1.5, 1.25, 1.05, 0.88, 0.74, 0.62, 0.52];
 
 type EyeResults = {
@@ -35,16 +35,17 @@ const Test = () => {
     leftEye: null
   });
 
+  // Generate new letter each round
   useEffect(() => {
     generateNewLetter();
   }, [currentTest]);
 
   const generateNewLetter = () => {
-    let randomLetter;
+    let randomLetter = "";
     do {
       randomLetter = SNELLEN_LETTERS[Math.floor(Math.random() * SNELLEN_LETTERS.length)];
-    } while (randomLetter === previousLetter && SNELLEN_LETTERS.length > 1);
-    
+    } while (randomLetter === previousLetter);
+
     setCurrentLetter(randomLetter);
     setPreviousLetter(randomLetter);
     setFontSize(FONT_SIZES[currentTest] || FONT_SIZES[FONT_SIZES.length - 1]);
@@ -56,57 +57,64 @@ const Test = () => {
     setCurrentTest(0);
     setCorrectAnswers(0);
     setCorrectAnswersDetails([]);
+    setPreviousLetter(""); // FIX para evitar repetición inicial
   };
 
   const handleNext = () => {
     const isCorrect = userInput.toUpperCase() === currentLetter;
-    
+
+    // Actualizar respuestas locales
+    const newCorrectAnswers = correctAnswers + (isCorrect ? 1 : 0);
+    const newCorrectDetails = isCorrect
+      ? [...correctAnswersDetails, currentLetter]
+      : [...correctAnswersDetails];
+
     if (isCorrect) {
-      setCorrectAnswers(prev => prev + 1);
-      setCorrectAnswersDetails(prev => [...prev, currentLetter]);
       toast.success("¡Correcto!");
     } else {
       toast.error(`Incorrecto. La letra era ${currentLetter}`);
     }
 
+    const currentEyeResults: EyeResults = {
+      score: newCorrectAnswers,
+      total: TOTAL_TESTS,
+      correctAnswers: newCorrectDetails
+    };
+
+    // Si todavía hay más preguntas
     if (currentTest < TOTAL_TESTS - 1) {
+      setCorrectAnswers(newCorrectAnswers);
+      setCorrectAnswersDetails(newCorrectDetails);
       setCurrentTest(prev => prev + 1);
-    } else {
-      // Calculate final score for current eye
-      const finalScore = correctAnswers + (isCorrect ? 1 : 0);
-      const finalCorrectAnswers = isCorrect ? [...correctAnswersDetails, currentLetter] : correctAnswersDetails;
-      
-      const currentEyeResults: EyeResults = {
-        score: finalScore,
-        total: TOTAL_TESTS,
-        correctAnswers: finalCorrectAnswers
+      return;
+    }
+
+    // Si termina el ojo derecho
+    if (eyeToTest === "right") {
+      setVisionResults(prev => ({ ...prev, rightEye: currentEyeResults }));
+      toast.success("Ojo derecho completado. Ahora prueba el ojo izquierdo.");
+      startEyeTest("left");
+      return;
+    }
+
+    // Si termina el ojo izquierdo
+    if (eyeToTest === "left") {
+      const finalResults = {
+        rightEye: visionResults.rightEye || null,
+        leftEye: currentEyeResults
       };
 
-      if (eyeToTest === "right") {
-        // Save right eye results and start left eye test
-        setVisionResults(prev => ({ ...prev, rightEye: currentEyeResults }));
-        toast.success("Ojo derecho completado. Ahora prueba el ojo izquierdo.");
-        startEyeTest("left");
-      } else if (eyeToTest === "left") {
-        // Save left eye results and navigate to questionnaire
-        const finalResults = {
-          rightEye: visionResults.rightEye!,
-          leftEye: currentEyeResults
-        };
-        navigate("/lifestyle-questionnaire", { 
-          state: { 
-            rightEye: finalResults.rightEye,
-            leftEye: finalResults.leftEye
-          } 
-        });
-      }
+      navigate("/lifestyle-questionnaire", {
+        state: {
+          rightEye: finalResults.rightEye,
+          leftEye: finalResults.leftEye
+        }
+      });
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && userInput.trim()) {
-      handleNext();
-    }
+    if (e.key === "Enter" && userInput.trim()) handleNext();
   };
 
   const progress = ((currentTest + 1) / TOTAL_TESTS) * 100;
@@ -124,19 +132,11 @@ const Test = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Button
-              size="lg"
-              onClick={() => startEyeTest("right")}
-              className="h-32 text-xl flex flex-col gap-2"
-            >
+            <Button size="lg" onClick={() => startEyeTest("right")} className="h-32 text-xl flex flex-col gap-2">
               <span className="text-4xl">👁️</span>
               <span>Ojo Derecho</span>
             </Button>
-            <Button
-              size="lg"
-              onClick={() => startEyeTest("left")}
-              className="h-32 text-xl flex flex-col gap-2"
-            >
+            <Button size="lg" onClick={() => startEyeTest("left")} className="h-32 text-xl flex flex-col gap-2">
               <span className="text-4xl">👁️</span>
               <span>Ojo Izquierdo</span>
             </Button>
@@ -168,31 +168,25 @@ const Test = () => {
         <div className="bg-card rounded-2xl shadow-lg p-12 border border-border">
           <div className="text-center space-y-12">
             <div className="min-h-[300px] flex items-center justify-center">
-              <p 
-                className="font-bold text-foreground select-none"
-                style={{ fontSize: `${fontSize}rem`, lineHeight: 1.2 }}
-              >
+              <p className="font-bold text-foreground select-none" style={{ fontSize: `${fontSize}rem`, lineHeight: 1.2 }}>
                 {currentLetter}
               </p>
             </div>
 
             <div className="space-y-4 max-w-md mx-auto">
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">
-                  Ingresa la letra que ves:
-                </label>
-                <Input
-                  type="text"
-                  maxLength={1}
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Escribe la letra aquí"
-                  className="text-center text-2xl h-14 uppercase"
-                  autoFocus
-                />
-              </div>
-
+              <label className="text-sm font-medium text-foreground mb-2 block">
+                Ingresa la letra que ves:
+              </label>
+              <Input
+                type="text"
+                maxLength={1}
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Escribe la letra aquí"
+                className="text-center text-2xl h-14 uppercase"
+                autoFocus
+              />
               <Button
                 size="lg"
                 onClick={handleNext}
@@ -206,10 +200,9 @@ const Test = () => {
         </div>
 
         <p className="text-center text-sm text-muted-foreground">
-          {eyeToTest === "right" 
+          {eyeToTest === "right"
             ? "Cubre tu ojo izquierdo e identifica cada letra con tu ojo derecho"
-            : "Cubre tu ojo derecho e identifica cada letra con tu ojo izquierdo"
-          }
+            : "Cubre tu ojo derecho e identifica cada letra con tu ojo izquierdo"}
         </p>
       </div>
     </div>
