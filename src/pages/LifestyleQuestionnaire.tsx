@@ -354,22 +354,24 @@ const LifestyleQuestionnaire = () => {
   const handleFinalSubmit = () => {
     if (!isLifestyleComplete) return;
 
-    if (lifestyleAnswers.attentionCheck !== "sometimes") {
-      toast.error("Por favor selecciona 'A veces' en la pregunta de atención.");
-      return;
-    }
-
     const finalAnswers = {
+      // Diagnostic
       diagnosedMyopia,
+
+      // Vision test
       rightEyeScore: rightEye.score,
-      leftEyeScore: leftEye.score,
       rightEyeTotal: rightEye.total,
+      leftEyeScore: leftEye.score,
       leftEyeTotal: leftEye.total,
+
+      // Questionnaire A or B
       ...questionnaireAnswers,
+
+      // Lifestyle
       ...lifestyleAnswers
     };
 
-    navigate("/final-results", {
+    navigate("/heuristic-results", {
       state: {
         answers: finalAnswers,
         rightEye,
