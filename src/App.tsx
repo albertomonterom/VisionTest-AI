@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 import Welcome from "./pages/Welcome";
 import Calibration from "./pages/Calibration";
-//import Test from "./pages/Test";
+import Test from "./pages/Test";
 //import Results from "./pages/Results";
 //import LifestyleQuestionnaire from "./pages/LifestyleQuestionnaire";
 //import AIPrediction from "./pages/AIPrediction";
@@ -15,7 +15,7 @@ const App = () => (
     <Route path="/" element={<Welcome />} />
     <Route path="/welcome" element={<Welcome />} />
     <Route path="/calibration" element={<Calibration />} />
-    {/* <Route path="/test" element={<Test />} /> */}
+    <Route path="/test" element={<Test />} />
     {/* <Route path="/results" element={<Results />} /> */}
     {/* <Route path="/lifestyle-questionnaire" element={<LifestyleQuestionnaire />} /> */}
     {/* <Route path="/ai-prediction" element={<AIPrediction />} /> */}
