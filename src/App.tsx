@@ -7,7 +7,7 @@ import LifestyleQuestionnaire from "./pages/LifestyleQuestionnaire";
 //import AIPrediction from "./pages/AIPrediction";
 import HeuristicResults from "./pages/HeuristicResults";
 import End from "./pages/End";
-//import NotFound from "./pages/NotFound";
+import NotFound from "./pages/NotFound";
 
 const App = () => (
   <Routes>
@@ -19,7 +19,7 @@ const App = () => (
     {/* <Route path="/ai-prediction" element={<AIPrediction />} /> */}
     <Route path="/heuristic-results" element={<HeuristicResults />} />
     <Route path="/end" element={<End />} />
-    {/* <Route path="*" element={<NotFound />} /> */}
+    <Route path="*" element={<NotFound />} />
   </Routes>
 );
 
