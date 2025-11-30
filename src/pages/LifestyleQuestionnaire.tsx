@@ -91,6 +91,9 @@ const LifestyleQuestionnaire = () => {
   >({});
   const [lifestyleAnswers, setLifestyleAnswers] =
     useState<LifestyleAnswers>(INITIAL_LIFESTYLE_ANSWERS);
+  const [prevDiagnosis, setPrevDiagnosis] = useState<string | null>(null);
+  const [hasVisitedLifestyle, setHasVisitedLifestyle] = useState(false);
+
 
   // Si no vienen resultados de ojos, regresamos al test
   useEffect(() => {
@@ -312,8 +315,10 @@ const LifestyleQuestionnaire = () => {
   );
 
   useEffect(() => {
-    // si cambia diagnóstico, limpiamos respuestas del cuestionario A/B
-    setQuestionnaireAnswers({});
+    if (prevDiagnosis !== null && prevDiagnosis !== diagnosedMyopia) {
+      setQuestionnaireAnswers({});
+    }
+    setPrevDiagnosis(diagnosedMyopia);
   }, [diagnosedMyopia]);
 
   const handleDiagnosticSubmit = () => {
@@ -337,7 +342,12 @@ const LifestyleQuestionnaire = () => {
 
   const handleQuestionnaireSubmit = () => {
     if (!isQuestionnaireComplete) return;
-    setLifestyleAnswers(INITIAL_LIFESTYLE_ANSWERS); // limpieza por si regresa
+
+    if (!hasVisitedLifestyle) {
+      setLifestyleAnswers(INITIAL_LIFESTYLE_ANSWERS);
+    }
+
+    setHasVisitedLifestyle(true);
     setCurrentStage("lifestyle");
   };
 
@@ -486,7 +496,6 @@ const LifestyleQuestionnaire = () => {
             <Button
               variant="ghost"
               onClick={() => {
-                setQuestionnaireAnswers({});
                 setCurrentStage("diagnostic");
               }}
               className="text-muted-foreground hover:text-foreground"
@@ -545,7 +554,6 @@ const LifestyleQuestionnaire = () => {
           <Button
             variant="ghost"
             onClick={() => {
-              setLifestyleAnswers(INITIAL_LIFESTYLE_ANSWERS);
               setCurrentStage("questionnaire");
             }}
             className="text-muted-foreground hover:text-foreground"
