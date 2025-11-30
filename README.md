@@ -12,7 +12,7 @@ This application guides users through:
 1. A calibration step using face detection
 2. A Snellen-like visual acuity test
 3. A lifestyle questionnaire
-4. AI-based prediction (optional)
+4. AI-based prediction
 5. Final combined results
 
 ---
