@@ -20,6 +20,8 @@ type EyeResults = {
 const Test = () => {
   const navigate = useNavigate();
   const [eyeToTest, setEyeToTest] = useState<"right" | "left" | null>(null);
+  const [isPreparing, setIsPreparing] = useState(true);
+  const [countdown, setCountdown] = useState(5);
   const [currentTest, setCurrentTest] = useState(0);
   const [currentLetter, setCurrentLetter] = useState("");
   const [previousLetter, setPreviousLetter] = useState("");
@@ -36,12 +38,23 @@ const Test = () => {
     leftEye: null
   });
 
-  // Start test with right eye first
+  // Countdown timer for preparation
   useEffect(() => {
-    if (eyeToTest === null) {
-      startEyeTest("right");
-    }
-  }, [eyeToTest]);
+    if (!isPreparing) return;
+
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev === 1) {
+          clearInterval(interval);
+          setIsPreparing(false);
+          startEyeTest("right");
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isPreparing]);
 
   // Generate new letter each round
   useEffect(() => {
@@ -136,6 +149,34 @@ const Test = () => {
 
   const progress = ((currentTest + 1) / TOTAL_TESTS) * 100;
 
+  if (isPreparing) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-8 max-w-xl animate-in fade-in duration-500">
+
+          <h2 className="text-4xl font-bold text-foreground">
+            Preparación para la Prueba de Visión
+          </h2>
+
+          <p className="text-lg text-muted-foreground">
+            Comenzaremos evaluando tu <span className="font-semibold text-foreground">Ojo Derecho</span>.
+          </p>
+
+          <p className="text-xl text-foreground font-medium">
+            Cubre tu ojo izquierdo y prepárate para identificar las letras.
+          </p>
+
+          <div className="pt-4">
+            <p className="text-5xl font-bold text-primary animate-pulse">
+              {countdown}
+            </p>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
   if (transitionScreen) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -153,9 +194,13 @@ const Test = () => {
             Continuaremos con la prueba del Ojo Izquierdo.
           </p>
 
-          <div className="pt-4">
-            <div className="mx-auto h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="flex justify-center pt-6">
+            <div className="h-12 w-12 border-4 border-primary/40 border-t-primary rounded-full animate-spin" />
           </div>
+
+          <p className="text-center text-sm text-muted-foreground mt-4">
+            Preparando la evaluación...
+          </p>
         </div>
       </div>
     );
