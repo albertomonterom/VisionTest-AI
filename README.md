@@ -47,10 +47,18 @@ Then open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ---
 
-## Environment Requirements
+## Environment Variables (Supabase)
 
-- Node.js v18+
-- The app uses MediaPipe's Face Detection model which requires WebAssembly support in the browser.
+Create a ```.env``` file in the project root:
+
+```bash
+VITE_SUPABASE_URL=your-project-url
+VITE_SUPABASE_PUBLISHABLE_KEY=your-public-anon-key
+```
+
+Descriptions:
+- ```VITE_SUPABASE_URL```: Your Supabase project REST URL
+- ```VITE_SUPABASE_PUBLISHABLE_KEY```: Public anon key for client-side access
 
 ## Features
 
