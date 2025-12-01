@@ -220,12 +220,6 @@ const Calibration = () => {
                     </div>
                     <p className="leading-relaxed">Asegúrate de tener buena iluminación</p>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-[10px]">
-                      3
-                    </div>
-                    <p className="leading-relaxed">Cubre un ojo durante la prueba (alternando)</p>
-                  </div>
                 </div>
               </div>
             </div>
