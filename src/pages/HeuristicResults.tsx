@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { CheckCircle, AlertTriangle, Download, Brain } from "lucide-react";
 import { toast } from "sonner";
 import { FeedbackModal } from "@/components/FeedbackModal";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,8 +15,8 @@ const HeuristicResults = () => {
   const navigate = useNavigate();
   const { answers, rightEye, leftEye } = location.state || {};
 
-  const [isSaving, setIsSaving] = useState(false);
-  const [savedToDb, setSavedToDb] = useState(false);
+  const [, setIsSaving] = useState(false);
+  const [, setSavedToDb] = useState(false);
   const [realDiagnosis, setRealDiagnosis] = useState<string | null>(null);
 
   const [showModal, setShowModal] = useState(false);

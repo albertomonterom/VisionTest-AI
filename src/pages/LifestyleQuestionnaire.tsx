@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Eye } from "lucide-react";
-import { toast } from "sonner";
 
 type EyeResults = {
   score: number;
