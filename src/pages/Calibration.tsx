@@ -50,10 +50,14 @@ const Calibration = () => {
         });
 
         if (videoRef.current) {
+          videoRef.current.onloadedmetadata = () => {
+            setCameraReady(true);
+            toast.success("Cámara lista");
+          };
+
           videoRef.current.srcObject = stream;
-          setCameraReady(true);
-          toast.success("Cámara lista");
         }
+
       } catch (err) {
         setCameraError(true);
         toast.error("No se pudo acceder a la cámara");
@@ -106,8 +110,8 @@ const Calibration = () => {
 
         const ratio = faceWidth / frameWidth;
 
-        if (ratio > 0.55) setDistanceStatus("close");
-        else if (ratio < 0.18) setDistanceStatus("far");
+        if (ratio > 0.30) setDistanceStatus("close");
+        else if (ratio < 0.22) setDistanceStatus("far");
         else setDistanceStatus("correct");
       } catch (err) {
         console.error("Error en detección:", err);
@@ -141,38 +145,42 @@ const Calibration = () => {
   // ---------------------------
   // DISTANCE STATUS MESSAGING
   // ---------------------------
-  const distanceMessageMap = {
-    detecting: { text: "Detectando distancia…", color: "text-muted-foreground" },
-    close: { text: "Estás demasiado cerca, aléjate un poco", color: "text-destructive font-semibold" },
-    far: { text: "Estás demasiado lejos, acércate un poco", color: "text-yellow-600 font-semibold" },
-    correct: { text: "✓ Distancia correcta", color: "text-green-600 font-semibold" },
+  const getDistanceMessage = () => {
+    switch (distanceStatus) {
+      case "detecting":
+        return { text: "Detectando distancia…", color: "text-muted-foreground" };
+      case "close":
+        return { text: "Estás demasiado cerca, aléjate un poco", color: "text-destructive" };
+      case "far":
+        return { text: "Estás demasiado lejos, acércate un poco", color: "text-yellow-600" };
+      case "correct":
+        return { text: "✓ Distancia correcta", color: "text-green-600" };
+    }
   };
 
-  const msg = distanceMessageMap[distanceStatus];
+  const distanceMessage = getDistanceMessage();
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="max-w-4xl w-full space-y-8">
-        {/* HEADER */}
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
-            <Camera className="w-8 h-8 text-primary" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-3 py-4">
+      <div className="max-w-4xl w-full space-y-3">
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+            <Camera className="w-6 h-6 text-primary" />
           </div>
-          <h2 className="text-4xl font-bold text-foreground">Calibración de Cámara</h2>
-          <p className="text-lg text-muted-foreground">Ajusta tu distancia para comenzar</p>
+          <h2 className="text-2xl font-bold text-foreground">Calibración de Cámara</h2>
+          <p className="text-sm text-muted-foreground">
+            Posiciónate para la prueba
+          </p>
         </div>
 
-        {/* VIDEO FEED */}
-        <div className="bg-card rounded-2xl shadow-lg overflow-hidden border border-border">
-          <div className="aspect-video relative bg-muted">
+        <div className="bg-card rounded-xl shadow-lg overflow-hidden border border-border">
+          <div className="bg-muted relative h-64 md:h-80">
             {cameraError ? (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center space-y-4">
-                  <AlertCircle className="w-16 h-16 text-destructive mx-auto" />
-                  <p className="text-destructive font-medium">Acceso a la cámara denegado</p>
-                  <p className="text-sm text-muted-foreground">
-                    Habilita permisos y actualiza
-                  </p>
+                <div className="text-center space-y-3">
+                  <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
+                  <p className="text-destructive font-medium text-sm">Acceso a la cámara denegado</p>
+                  <p className="text-xs text-muted-foreground">Por favor, habilita los permisos de la cámara y actualiza</p>
                 </div>
               </div>
             ) : (
@@ -186,36 +194,49 @@ const Calibration = () => {
             )}
           </div>
 
-          {/* DISTANCE MESSAGE */}
           {cameraReady && !cameraError && (
-            <div className="px-8 py-4 border-b border-border">
-              <p className={`text-center transition-colors ${msg.color}`}>{msg.text}</p>
+            <div className="px-4 py-2 border-b border-border">
+              <p className={`text-center text-sm font-medium transition-colors ${distanceMessage.color}`}>
+                {distanceMessage.text}
+              </p>
             </div>
           )}
 
-          {/* INSTRUCTIONS + BUTTON */}
-          <div className="p-8 space-y-6">
-            <div className="flex items-start gap-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <CheckCircle className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Instrucciones</h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>1. Colócate entre 40 y 80 cm de la pantalla.</li>
-                  <li>2. Asegura buena iluminación en tu rostro.</li>
-                  <li>3. Si deseas, quítate los lentes para medir tu visión sin corrección.</li>
-                  <li>4. Cubre un ojo durante la prueba (alternarás más adelante).</li>
-                  <li>5. El tamaño de las letras se ajustará automáticamente.</li>
-                </ul>
+          <div className="p-4 space-y-3">
+            <div className="flex items-start gap-3 p-3 bg-medical-light/20 rounded-lg border border-medical-primary/20">
+              <CheckCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-foreground text-sm mb-1.5">Instrucciones</h3>
+                <div className="space-y-1.5 text-xs text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-[10px]">
+                      1
+                    </div>
+                    <p className="leading-relaxed">Colócate entre 60 y 80 cm de tu pantalla</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-[10px]">
+                      2
+                    </div>
+                    <p className="leading-relaxed">Asegúrate de tener buena iluminación</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-[10px]">
+                      3
+                    </div>
+                    <p className="leading-relaxed">Cubre un ojo durante la prueba (alternando)</p>
+                  </div>
+                </div>
               </div>
             </div>
 
             <Button
-              size="lg"
+              size="default"
               onClick={handleVerifyDistance}
               disabled={!cameraReady || distanceStatus !== "correct"}
-              className="w-full text-lg py-6 h-auto"
+              className="w-full"
             >
-              Verificar distancia y continuar
+              Verificar Distancia y Continuar
             </Button>
           </div>
         </div>
