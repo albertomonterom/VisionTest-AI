@@ -131,6 +131,40 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_feedback: {
+        Row: {
+          id: string;
+          created_at: string;
+          vision_record_id: string;
+          usefulness: number;
+          easiness: number;
+          recommend: boolean;
+          feedback_text: string | null;
+        };
+        Insert: {
+          vision_record_id: string;
+          usefulness: number;
+          easiness: number;
+          recommend: boolean;
+          feedback_text?: string | null;
+        };
+        Update: {
+          vision_record_id?: string;
+          usefulness?: number;
+          easiness?: number;
+          recommend?: boolean;
+          feedback_text?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_feedback_vision_record_id_fkey";
+            columns: ["vision_record_id"];
+            isOneToOne: false;
+            referencedRelation: "vision_data";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {};
     Functions: {};

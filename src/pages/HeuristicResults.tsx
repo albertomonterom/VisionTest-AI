@@ -5,6 +5,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, AlertTriangle, Download, Brain } from "lucide-react";
 import { toast } from "sonner";
+import { FeedbackModal } from "@/components/FeedbackModal";
 import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,9 +14,13 @@ const HeuristicResults = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { answers, rightEye, leftEye } = location.state || {};
+
   const [isSaving, setIsSaving] = useState(false);
   const [savedToDb, setSavedToDb] = useState(false);
   const [realDiagnosis, setRealDiagnosis] = useState<string | null>(null);
+
+  const [showModal, setShowModal] = useState(false);
+  const [visionRecordId, setVisionRecordId] = useState<string | null>(null);
 
   // Helper function to calculate vision level from percentage
   const calculateVisionMetrics = (score: number, total: number) => {
@@ -161,63 +166,68 @@ const HeuristicResults = () => {
   const aiPrediction = calculateAIPrediction();
 
   const saveToSupabase = async () => {
-    if (!answers || savedToDb || !rightEye || !leftEye) return;
+    if (!answers || !rightEye || !leftEye) return;
 
     setIsSaving(true);
     
     try {
-      const { error } = await supabase.from("vision_data").insert({
-      // Vision test
-      right_eye_score: rightEye.score,
-      right_eye_total: rightEye.total,
-      left_eye_score: leftEye.score,
-      left_eye_total: leftEye.total,
+      const { data, error } = await supabase.from("vision_data").insert({
+        // Vision test
+        right_eye_score: rightEye.score,
+        right_eye_total: rightEye.total,
+        left_eye_score: leftEye.score,
+        left_eye_total: leftEye.total,
 
-      // Self-reported diagnosis
-      diagnosed_myopia: answers.diagnosedMyopia || null,
+        // Self-reported diagnosis
+        diagnosed_myopia: answers.diagnosedMyopia || null,
 
-      // Real diagnosis (true label)
-      real_diagnosis: realDiagnosis || null,
+        // Real diagnosis (true label)
+        real_diagnosis: realDiagnosis || null,
 
-      // Questionnaire A
-      myopia_progression: answers.myopiaProgression || null,
-      glasses_update: answers.glassesUpdate || null,
-      vision_changes: answers.visionChanges || null,
-      night_vision: answers.nightVision || null,
-      distance_vision: answers.distanceVision || null,
+        // Questionnaire A
+        myopia_progression: answers.myopiaProgression || null,
+        glasses_update: answers.glassesUpdate || null,
+        vision_changes: answers.visionChanges || null,
+        night_vision: answers.nightVision || null,
+        distance_vision: answers.distanceVision || null,
 
-      // Questionnaire B
-      distance_blur: answers.distanceBlur || null,
-      eye_squinting: answers.eyeSquinting || null,
-      headaches: answers.headaches || null,
-      close_work: answers.closeWork || null,
-      vision_fatigue: answers.visionFatigue || null,
+        // Questionnaire B
+        distance_blur: answers.distanceBlur || null,
+        eye_squinting: answers.eyeSquinting || null,
+        headaches: answers.headaches || null,
+        close_work: answers.closeWork || null,
+        vision_fatigue: answers.visionFatigue || null,
 
-      // Lifestyle
-      age_group: answers.age || null,
-      screen_time: answers.screenTime || null,
-      wear_glasses: answers.wearGlasses === "yes",
-      family_myopia: answers.familyMyopia || null,
-      attention_check: answers.attentionCheck || null,
-      eye_strain: answers.eyeStrain || null,
-      eye_rest: answers.eyeRest || null,
-      sleep_hours: answers.sleep || null,
-      outdoor_time: answers.outdoorTime || null,
-      reading_distance: answers.readingDistance || null,
+        // Lifestyle
+        age_group: answers.age || null,
+        screen_time: answers.screenTime || null,
+        wear_glasses: answers.wearGlasses === "yes",
+        family_myopia: answers.familyMyopia || null,
+        attention_check: answers.attentionCheck || null,
+        eye_strain: answers.eyeStrain || null,
+        eye_rest: answers.eyeRest || null,
+        sleep_hours: answers.sleep || null,
+        outdoor_time: answers.outdoorTime || null,
+        reading_distance: answers.readingDistance || null,
 
-      // Meta
-      correct_answers: {
-        right: rightEye.correctAnswers,
-        left: leftEye.correctAnswers
-      }
-    });
+        // Meta
+        correct_answers: {
+          right: rightEye.correctAnswers,
+          left: leftEye.correctAnswers
+        }
+      })
+      .select("id") // Get the ID of the newly inserted record
+      .single(); // We expect only one record to be inserted
 
       if (error) throw error;
 
+      setVisionRecordId(data?.id || null); // Store the ID for feedback
       setSavedToDb(true);
       toast.success("Resultados guardados exitosamente en la base de datos");
+
+      setShowModal(true); // Show feedback modal after saving
+
     } catch (error) {
-      console.error("Error saving to Supabase:", error);
       toast.error("Error al guardar los resultados. Por favor, intenta de nuevo.");
     } finally {
       setIsSaving(false);
@@ -336,13 +346,8 @@ const HeuristicResults = () => {
     navigate("/welcome");
   };
 
-  const handleExit = async () => {
-    if (!realDiagnosis) {
-      toast.error("Por favor selecciona tu diagnóstico real antes de continuar.");
-      return;
-    }
-
-    await saveToSupabase();
+  const handleFinish = () => {
+    // Close the modal
     navigate("/end");
   };
 
@@ -573,7 +578,7 @@ const HeuristicResults = () => {
 
             <Button
               disabled={!realDiagnosis}
-              onClick={handleExit}
+              onClick={() => saveToSupabase()}
               className="w-full"
             >
               Finalizar
@@ -588,6 +593,14 @@ const HeuristicResults = () => {
           un diagnóstico preciso.
         </p>
       </div>
+      
+      {/* Feedback Modal */}
+      <FeedbackModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        visionRecordId={visionRecordId}
+        onFinish={handleFinish}
+      />
     </div>
   );
 };

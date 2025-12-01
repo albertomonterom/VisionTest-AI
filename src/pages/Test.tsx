@@ -9,7 +9,7 @@ const SNELLEN_LETTERS = ["C", "D", "E", "F", "H", "K", "N", "O", "P", "R", "T", 
 const TOTAL_TESTS = 8;
 
 // Font sizes for digital test (40-80 cm)
-const FONT_SIZES = [1.4, 1.3, 1.15, 1.05, 0.88, 0.74, 0.62, 0.52];
+const FONT_SIZES = [1.3, 1.1, 1.05, 0.88, 0.74, 0.62, 0.52, 0.42];
 
 type EyeResults = {
   score: number;
