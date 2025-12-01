@@ -39,6 +39,11 @@ const Welcome = () => {
             Siempre consulta a un profesional de la salud visual para un examen completo de la vista.
           </p>
         </div>
+
+        {/* Footer credit */}
+        <p className="text-xs text-center text-muted-foreground mt-8">
+          © 2025 VisionTest AI — Desarrollado por Alberto Montero
+        </p>
       </div>
     </div>
   );
