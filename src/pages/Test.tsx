@@ -122,7 +122,7 @@ const Test = () => {
       setTimeout(() => {
         setTransitionScreen(false);
         startEyeTest("left");
-      }, 5000);
+      }, 4000);
 
       return;
     }

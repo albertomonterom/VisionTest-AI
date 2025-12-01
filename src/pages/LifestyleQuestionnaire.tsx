@@ -551,7 +551,7 @@ const LifestyleQuestionnaire = () => {
             disabled={!isLifestyleComplete}
             className="w-full h-auto py-4"
           >
-            Enviar y ver análisis IA
+            Enviar y ver análisis automatizado
           </Button>
           <Button
             variant="ghost"

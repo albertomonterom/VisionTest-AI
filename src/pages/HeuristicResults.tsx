@@ -15,7 +15,7 @@ const HeuristicResults = () => {
   const { answers, rightEye, leftEye } = location.state || {};
   const [isSaving, setIsSaving] = useState(false);
   const [savedToDb, setSavedToDb] = useState(false);
-  const [realDiagnosis, setRealDiagnosis] = useState("unknown");
+  const [realDiagnosis, setRealDiagnosis] = useState<string | null>(null);
 
   // Helper function to calculate vision level from percentage
   const calculateVisionMetrics = (score: number, total: number) => {
@@ -159,17 +159,6 @@ const HeuristicResults = () => {
   };
 
   const aiPrediction = calculateAIPrediction();
-
-  useEffect(() => {
-    // Redirect if no data is available
-    if (!answers || !rightEye || !leftEye) {
-      navigate("/welcome");
-      return;
-    }
-
-    // Auto-save to Supabase
-    saveToSupabase();
-  }, []);
 
   const saveToSupabase = async () => {
     if (!answers || savedToDb || !rightEye || !leftEye) return;
@@ -347,7 +336,13 @@ const HeuristicResults = () => {
     navigate("/welcome");
   };
 
-  const handleExit = () => {
+  const handleExit = async () => {
+    if (!realDiagnosis) {
+      toast.error("Por favor selecciona tu diagnóstico real antes de continuar.");
+      return;
+    }
+
+    await saveToSupabase();
     navigate("/end");
   };
 
@@ -534,7 +529,7 @@ const HeuristicResults = () => {
           </p>
 
           <RadioGroup
-            value={realDiagnosis}
+            value={realDiagnosis ?? ""}
             onValueChange={setRealDiagnosis}
             className="space-y-3"
           >
@@ -556,39 +551,35 @@ const HeuristicResults = () => {
         </Card>
 
         {/* Action Buttons */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Button
-            onClick={handleDownloadPDF}
-            variant="outline"
-            className="w-full gap-2"
-          >
-            <Download className="w-4 h-4" />
-            Descargar PDF
-          </Button>
-          
-          <Button
-            onClick={saveToSupabase}
-            variant="outline"
-            className="w-full"
-            disabled={isSaving || savedToDb}
-          >
-            {savedToDb ? "✓ Guardado" : isSaving ? "Guardando..." : "Guardar Resultados"}
-          </Button>
-          
-          <Button
-            onClick={handleTryAgain}
-            variant="outline"
-            className="w-full"
-          >
-            Repetir Prueba
-          </Button>
-          
-          <Button
-            onClick={handleExit}
-            className="w-full"
-          >
-            Finalizar
-          </Button>
+        <div className="w-full flex justify-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-4xl">
+            
+            <Button
+              onClick={handleDownloadPDF}
+              variant="outline"
+              className="w-full"
+            >
+              <Download className="w-4 h-4 mr-1" />
+              Descargar PDF
+            </Button>
+
+            <Button
+              onClick={handleTryAgain}
+              variant="outline"
+              className="w-full"
+            >
+              Repetir Prueba
+            </Button>
+
+            <Button
+              disabled={!realDiagnosis}
+              onClick={handleExit}
+              className="w-full"
+            >
+              Finalizar
+            </Button>
+
+          </div>
         </div>
 
         <p className="text-xs text-center text-muted-foreground max-w-2xl mx-auto">

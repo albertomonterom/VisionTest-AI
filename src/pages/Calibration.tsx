@@ -126,6 +126,9 @@ const Calibration = () => {
   // HANDLE CONTINUE
   // ---------------------------
   const handleVerifyDistance = () => {
+    // Remove any existing toast notifications
+    toast.dismiss();
+
     if (distanceStatus !== "correct") {
       toast.error("Ajusta tu distancia antes de continuar");
       return;
