@@ -15,12 +15,130 @@ const HeuristicResults = () => {
   const navigate = useNavigate();
   const { answers, rightEye, leftEye } = location.state || {};
 
-  const [, setIsSaving] = useState(false);
-  const [, setSavedToDb] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [realDiagnosis, setRealDiagnosis] = useState<string | null>(null);
 
   const [showModal, setShowModal] = useState(false);
-  const [visionRecordId, setVisionRecordId] = useState<string | null>(null);
+
+  // Map internal English values to Spanish labels only when persisting
+  const valueMappings = {
+    diagnosedMyopia: {
+      yes: "Sí",
+      no: "No",
+      unsure: "No estoy seguro",
+    },
+    myopiaProgression: {
+      yes: "Sí",
+      no: "No",
+      unsure: "No estoy seguro",
+    },
+    glassesUpdate: {
+      yearly: "Cada año o menos",
+      "2-3years": "Cada 2-3 años",
+      rarely: "Raramente o casi nunca",
+    },
+    visionChanges: {
+      frequently: "Frecuentemente",
+      sometimes: "A veces",
+      never: "Nunca",
+    },
+    nightVision: {
+      yes: "Sí",
+      sometimes: "A veces",
+      no: "No",
+    },
+    distanceVision: {
+      close: "Menos de 2 metros",
+      medium: "2-5 metros",
+      far: "Más de 5 metros",
+    },
+    distanceBlur: {
+      frequently: "Frecuentemente",
+      sometimes: "A veces",
+      never: "Nunca",
+    },
+    eyeSquinting: {
+      frequently: "Frecuentemente",
+      sometimes: "A veces",
+      never: "Nunca",
+    },
+    headaches: {
+      frequently: "Frecuentemente",
+      sometimes: "A veces",
+      never: "Nunca",
+    },
+    closeWork: {
+      yes: "Sí, sin problemas",
+      sometimes: "A veces borroso",
+      no: "Frecuentemente borroso",
+    },
+    visionFatigue: {
+      yes: "Sí",
+      sometimes: "A veces",
+      no: "No",
+    },
+    age: {
+      under18: "Menos de 18 años",
+      "18-30": "18–30 años",
+      "31-45": "31–45 años",
+      over45: "Más de 45 años",
+    },
+    screenTime: {
+      low: "Menos de 2 horas",
+      medium: "2-6 horas",
+      high: "Más de 6 horas",
+    },
+    wearGlasses: {
+      yes: "Sí",
+      no: "No",
+    },
+    familyMyopia: {
+      yes: "Sí",
+      no: "No",
+      unsure: "No estoy seguro",
+    },
+    attentionCheck: {
+      frequently: "Frecuentemente",
+      sometimes: "A veces",
+      never: "Nunca",
+    },
+    eyeStrain: {
+      often: "Frecuentemente",
+      sometimes: "A veces",
+      never: "Nunca",
+    },
+    eyeRest: {
+      frequently: "Frecuentemente",
+      sometimes: "A veces",
+      never: "Nunca",
+    },
+    sleep: {
+      low: "Menos de 6 horas",
+      medium: "6-8 horas",
+      high: "Más de 8 horas",
+    },
+    outdoorTime: {
+      low: "Menos de 30 minutos",
+      medium: "30 minutos - 2 horas",
+      high: "Más de 2 horas",
+    },
+    readingDistance: {
+      close: "Muy cerca (< 20 cm)",
+      normal: "Distancia normal (20-40 cm)",
+      far: "Lejos (> 40 cm)",
+    },
+    realDiagnosis: {
+      myopia: "Miopía confirmada",
+      healthy: "Visión normal",
+      unknown: "No tengo diagnóstico",
+    },
+  } as const;
+
+  const mapValue = (key: keyof typeof valueMappings, value: string | null | undefined) => {
+    if (value === null || value === undefined) return value;
+    const mapper = valueMappings[key];
+    return mapper?.[value as keyof typeof mapper] ?? value;
+  };
 
   // Helper function to calculate vision level from percentage
   const calculateVisionMetrics = (score: number, total: number) => {
@@ -163,15 +281,30 @@ const HeuristicResults = () => {
     };
   };
 
+  type Feedback = {
+    planDoctor: "si" | "no" | "no_se";
+    timeframe: string;
+    priority: number;
+    studyInterest: "si" | "no" | "depende";
+    multiVisitWillingness: number;
+    mainFactor: string;
+  };
+
   const aiPrediction = calculateAIPrediction();
 
-  const saveToSupabase = async () => {
+  const handleFeedbackFinish = (feedback: Feedback) => {
+    setShowModal(false);
+    saveToSupabase(feedback);
+  };
+
+  const saveToSupabase = async (feedback: Feedback) => {
+    if (isSaving) return;
     if (!answers || !rightEye || !leftEye) return;
 
     setIsSaving(true);
     
     try {
-      const { data, error } = await supabase.from("vision_data").insert({
+      const mappedPayload = {
         // Vision test
         right_eye_score: rightEye.score,
         right_eye_total: rightEye.total,
@@ -179,54 +312,70 @@ const HeuristicResults = () => {
         left_eye_total: leftEye.total,
 
         // Self-reported diagnosis
-        diagnosed_myopia: answers.diagnosedMyopia || null,
+        diagnosed_myopia: mapValue("diagnosedMyopia", answers.diagnosedMyopia) || null,
 
         // Real diagnosis (true label)
-        real_diagnosis: realDiagnosis || null,
+        real_diagnosis: mapValue("realDiagnosis", realDiagnosis) || null,
 
         // Questionnaire A
-        myopia_progression: answers.myopiaProgression || null,
-        glasses_update: answers.glassesUpdate || null,
-        vision_changes: answers.visionChanges || null,
-        night_vision: answers.nightVision || null,
-        distance_vision: answers.distanceVision || null,
+        myopia_progression: mapValue("myopiaProgression", answers.myopiaProgression) || null,
+        glasses_update: mapValue("glassesUpdate", answers.glassesUpdate) || null,
+        vision_changes: mapValue("visionChanges", answers.visionChanges) || null,
+        night_vision: mapValue("nightVision", answers.nightVision) || null,
+        distance_vision: mapValue("distanceVision", answers.distanceVision) || null,
 
         // Questionnaire B
-        distance_blur: answers.distanceBlur || null,
-        eye_squinting: answers.eyeSquinting || null,
-        headaches: answers.headaches || null,
-        close_work: answers.closeWork || null,
-        vision_fatigue: answers.visionFatigue || null,
+        distance_blur: mapValue("distanceBlur", answers.distanceBlur) || null,
+        eye_squinting: mapValue("eyeSquinting", answers.eyeSquinting) || null,
+        headaches: mapValue("headaches", answers.headaches) || null,
+        close_work: mapValue("closeWork", answers.closeWork) || null,
+        vision_fatigue: mapValue("visionFatigue", answers.visionFatigue) || null,
 
         // Lifestyle
-        age_group: answers.age || null,
-        screen_time: answers.screenTime || null,
-        wear_glasses: answers.wearGlasses === "yes",
-        family_myopia: answers.familyMyopia || null,
-        attention_check: answers.attentionCheck || null,
-        eye_strain: answers.eyeStrain || null,
-        eye_rest: answers.eyeRest || null,
-        sleep_hours: answers.sleep || null,
-        outdoor_time: answers.outdoorTime || null,
-        reading_distance: answers.readingDistance || null,
+        age_group: mapValue("age", answers.age) || null,
+        screen_time: mapValue("screenTime", answers.screenTime) || null,
+        wear_glasses:
+          answers.wearGlasses === "yes" ? true :
+          answers.wearGlasses === "no" ? false :
+          null,
+        family_myopia: mapValue("familyMyopia", answers.familyMyopia) || null,
+        attention_check: mapValue("attentionCheck", answers.attentionCheck) || null,
+        eye_strain: mapValue("eyeStrain", answers.eyeStrain) || null,
+        eye_rest: mapValue("eyeRest", answers.eyeRest) || null,
+        sleep_hours: mapValue("sleep", answers.sleep) || null,
+        outdoor_time: mapValue("outdoorTime", answers.outdoorTime) || null,
+        reading_distance: mapValue("readingDistance", answers.readingDistance) || null,
 
         // Meta
         correct_answers: {
-          right: rightEye.correctAnswers,
-          left: leftEye.correctAnswers
+          derecho: rightEye.correctAnswers,
+          izquierdo: leftEye.correctAnswers
         }
-      })
+      };
+
+      const { data, error } = await supabase.from("vision_data").insert(mappedPayload)
       .select("id") // Get the ID of the newly inserted record
       .single(); // We expect only one record to be inserted
 
       if (error) throw error;
 
-      setVisionRecordId(data?.id || null); // Store the ID for feedback
-      setSavedToDb(true);
+      const { error: feedbackError } = await supabase
+        .from("user_feedback")
+        .insert({
+          vision_record_id: data.id,
+          plan_doctor: feedback.planDoctor,
+          timeframe: feedback.timeframe,
+          priority: feedback.priority,
+          study_interest: feedback.studyInterest,
+          multi_visit_willingness: feedback.multiVisitWillingness,
+          main_factor: feedback.mainFactor,
+        });
+
+      if (feedbackError) throw feedbackError;
+
       toast.success("Resultados guardados exitosamente en la base de datos");
 
-      setShowModal(true); // Show feedback modal after saving
-
+      navigate("/end");
     } catch (error) {
       toast.error("Error al guardar los resultados. Por favor, intenta de nuevo.");
     } finally {
@@ -313,15 +462,15 @@ const HeuristicResults = () => {
 
     doc.setFontSize(10);
     const lifestyleData = [
-      { label: "Edad", value: answers.age },
-      { label: "Tiempo de pantalla", value: answers.screenTime },
-      { label: "Usa gafas", value: answers.wearGlasses },
-      { label: "Historial familiar", value: answers.familyMyopia },
-      { label: "Fatiga ocular", value: answers.eyeStrain },
-      { label: "Descanso ocular", value: answers.eyeRest },
-      { label: "Horas de sueño", value: answers.sleep },
-      { label: "Tiempo al aire libre", value: answers.outdoorTime },
-      { label: "Distancia de lectura", value: answers.readingDistance },
+      { label: "Edad", value: mapValue("age", answers.age) ?? answers.age },
+      { label: "Tiempo de pantalla", value: mapValue("screenTime", answers.screenTime) ?? answers.screenTime },
+      { label: "Usa gafas", value: mapValue("wearGlasses", answers.wearGlasses) ?? answers.wearGlasses },
+      { label: "Historial familiar", value: mapValue("familyMyopia", answers.familyMyopia) ?? answers.familyMyopia },
+      { label: "Fatiga ocular", value: mapValue("eyeStrain", answers.eyeStrain) ?? answers.eyeStrain },
+      { label: "Descanso ocular", value: mapValue("eyeRest", answers.eyeRest) ?? answers.eyeRest },
+      { label: "Horas de sueño", value: mapValue("sleep", answers.sleep) ?? answers.sleep },
+      { label: "Tiempo al aire libre", value: mapValue("outdoorTime", answers.outdoorTime) ?? answers.outdoorTime },
+      { label: "Distancia de lectura", value: mapValue("readingDistance", answers.readingDistance) ?? answers.readingDistance },
     ];
 
     lifestyleData.forEach((item) => {
@@ -344,11 +493,6 @@ const HeuristicResults = () => {
 
   const handleTryAgain = () => {
     navigate("/welcome");
-  };
-
-  const handleFinish = () => {
-    // Close the modal
-    navigate("/end");
   };
 
   if (!aiPrediction) {
@@ -577,11 +721,11 @@ const HeuristicResults = () => {
             </Button>
 
             <Button
-              disabled={!realDiagnosis}
-              onClick={() => saveToSupabase()}
+              onClick={() => setShowModal(true)}
               className="w-full"
+              disabled={isSaving}
             >
-              Finalizar
+              Continuar con Feedback
             </Button>
 
           </div>
@@ -598,8 +742,7 @@ const HeuristicResults = () => {
       <FeedbackModal
         open={showModal}
         onClose={() => setShowModal(false)}
-        visionRecordId={visionRecordId}
-        onFinish={handleFinish}
+        onFinish={handleFeedbackFinish}
       />
     </div>
   );

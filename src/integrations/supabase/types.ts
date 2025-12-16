@@ -131,40 +131,48 @@ export type Database = {
         };
         Relationships: [];
       };
-      user_feedback: {
-        Row: {
-          id: string;
-          created_at: string;
-          vision_record_id: string;
-          usefulness: number;
-          easiness: number;
-          recommend: boolean;
-          feedback_text: string | null;
-        };
-        Insert: {
-          vision_record_id: string;
-          usefulness: number;
-          easiness: number;
-          recommend: boolean;
-          feedback_text?: string | null;
-        };
-        Update: {
-          vision_record_id?: string;
-          usefulness?: number;
-          easiness?: number;
-          recommend?: boolean;
-          feedback_text?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "user_feedback_vision_record_id_fkey";
-            columns: ["vision_record_id"];
-            isOneToOne: false;
-            referencedRelation: "vision_data";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
+  user_feedback: {
+    Row: {
+      id: string;
+      created_at: string;
+      vision_record_id: string;
+
+      plan_doctor: "si" | "no" | "no_se";
+      timeframe: string | null;
+      priority: number;
+      study_interest: "si" | "no" | "depende";
+      multi_visit_willingness: number;
+      main_factor: string | null;
+    };
+    Insert: {
+      vision_record_id: string;
+
+      plan_doctor: "si" | "no" | "no_se";
+      timeframe?: string | null;
+      priority: number;
+      study_interest: "si" | "no" | "depende";
+      multi_visit_willingness: number;
+      main_factor?: string | null;
+    };
+    Update: {
+      plan_doctor?: "si" | "no" | "no_se";
+      timeframe?: string | null;
+      priority?: number;
+      study_interest?: "si" | "no" | "depende";
+      multi_visit_willingness?: number;
+      main_factor?: string | null;
+    };
+    Relationships: [
+      {
+        foreignKeyName: "user_feedback_vision_record_id_fkey";
+        columns: ["vision_record_id"];
+        isOneToOne: false;
+        referencedRelation: "vision_data";
+        referencedColumns: ["id"];
+      }
+    ];
+  };
+
     };
     Views: {};
     Functions: {};

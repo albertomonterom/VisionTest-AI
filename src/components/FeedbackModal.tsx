@@ -10,116 +10,197 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 interface FeedbackModalProps {
   open: boolean;
   onClose: () => void;
-  visionRecordId: string | null;
-  onFinish: () => void;
+  onFinish: (feedback: {
+    planDoctor: "si" | "no" | "no_se";
+    timeframe: string;
+    priority: number;
+    studyInterest: "si" | "no" | "depende";
+    multiVisitWillingness: number;
+    mainFactor: string;
+  }) => void;
 }
 
 export const FeedbackModal = ({
   open,
   onClose,
-  visionRecordId,
   onFinish,
 }: FeedbackModalProps) => {
-  const [usefulness, setUsefulness] = useState(4);
-  const [easiness, setEasiness] = useState(4);
-  const [recommend, setRecommend] = useState(true);
-  const [feedbackText, setFeedbackText] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [planDoctor, setPlanDoctor] =
+    useState<"si" | "no" | "no_se">("no_se");
+  const [timeframe, setTimeframe] = useState<string | null>(null);
+  const [priority, setPriority] = useState(3);
+  const [studyInterest, setStudyInterest] =
+    useState<"si" | "no" | "depende">("depende");
+  const [multiVisitWillingness, setMultiVisitWillingness] = useState(3);
+  const [mainFactor, setMainFactor] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
-    if (!visionRecordId) {
-      toast.error("No se pudo asociar tu feedback al resultado guardado.");
-      return;
-    }
+  const isFormComplete =
+    timeframe !== null &&
+    mainFactor !== null;
 
-    setIsSubmitting(true);
+  const handleSubmit = () => {
+    if (!isFormComplete) return;
 
-    const { error } = await supabase.from("user_feedback").insert({
-      vision_record_id: visionRecordId,
-      usefulness,
-      easiness,
-      recommend,
-      feedback_text: feedbackText || null,
+    onFinish({
+      planDoctor,
+      timeframe,
+      priority,
+      studyInterest,
+      multiVisitWillingness,
+      mainFactor,
     });
-
-    if (error) {
-      console.error(error);
-      toast.error("Error al enviar tu retroalimentación.");
-    } else {
-      toast.success("¡Gracias por tu retroalimentación!");
-      onClose();
-      onFinish();
-    }
-
-    setIsSubmitting(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={() => {}} modal={true}>
-      <DialogContent className="max-w-md [&>button]:hidden">
+    <Dialog open={open} onOpenChange={() => {}} modal>
+      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col [&>button]:hidden">
         <DialogHeader>
-          <DialogTitle>Ayúdanos a mejorar</DialogTitle>
+          <DialogTitle>Cuestionario breve</DialogTitle>
           <DialogDescription>
-            Tu opinión mejora la precisión de nuestro análisis. Solo toma 20 segundos.
+            Sus respuestas nos ayudan a comprender el seguimiento clínico de la
+            miopía. Solo toma unos segundos.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-2">
+        <div className="flex-1 overflow-y-auto pr-2 space-y-6 py-2">
+
           {/* Pregunta 1 */}
           <div className="space-y-2">
-            <Label>¿Qué tan útil fue esta prueba?</Label>
-            <Slider
-              max={5}
-              min={1}
-              step={1}
-              value={[usefulness]}
-              onValueChange={(v) => setUsefulness(v[0])}
-            />
-            <p className="text-xs text-muted-foreground">Valor: {usefulness} / 5</p>
+            <Label className="text-base font-semibold">
+              ¿Planea acudir a un médico para revisar su vista por posibles
+              problemas de miopía?
+            </Label>
+            {[
+              { label: "Sí", value: "si" },
+              { label: "No", value: "no" },
+              { label: "Aún no lo sé", value: "no_se" },
+            ].map((o) => (
+              <div key={o.value} className="flex items-center space-x-3">
+                <Checkbox
+                  checked={planDoctor === o.value}
+                  onCheckedChange={() => setPlanDoctor(o.value as any)}
+                />
+                <span className="text-sm text-muted-foreground">{o.label}</span>
+              </div>
+            ))}
           </div>
 
           {/* Pregunta 2 */}
           <div className="space-y-2">
-            <Label>¿Qué tan fácil fue utilizarla?</Label>
-            <Slider
-              max={5}
-              min={1}
-              step={1}
-              value={[easiness]}
-              onValueChange={(v) => setEasiness(v[0])}
-            />
-            <p className="text-xs text-muted-foreground">Valor: {easiness} / 5</p>
+            <Label className="text-base font-semibold">
+              Si planea acudir, ¿en qué plazo lo haría?
+            </Label>
+            {[
+              "En las próximas 2 semanas",
+              "En 1–2 meses",
+              "En 3–6 meses",
+              "En más de 6 meses",
+              "No tengo un plazo definido",
+            ].map((o) => (
+              <div key={o} className="flex items-center space-x-3">
+                <Checkbox
+                  checked={timeframe === o}
+                  onCheckedChange={() => setTimeframe(o)}
+                />
+                <span className="text-sm text-muted-foreground">{o}</span>
+              </div>
+            ))}
           </div>
 
           {/* Pregunta 3 */}
-          <div className="flex items-center space-x-3">
-            <Checkbox
-              checked={recommend}
-              onCheckedChange={(v: boolean) => setRecommend(v)}
-            />
-            <Label>Recomendaría esta herramienta</Label>
-          </div>
-
-          {/* Comentarios */}
           <div className="space-y-2">
-            <Label>¿Algo que mejorar?</Label>
-            <Textarea
-              placeholder="Opcional"
-              value={feedbackText}
-              onChange={(e) => setFeedbackText(e.target.value)}
+            <Label className="text-base font-semibold">
+              ¿Qué prioridad tiene para usted revisar su salud visual en este
+              momento?
+            </Label>
+            <Slider
+              min={1}
+              max={5}
+              step={1}
+              value={[priority]}
+              onValueChange={(v) => setPriority(v[0])}
             />
+            <p className="text-xs text-muted-foreground">
+              {["Ninguna", "Baja", "Media", "Alta", "Muy alta"][priority - 1]}
+            </p>
           </div>
 
-          <Button className="w-full" onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Enviando..." : "Enviar y Finalizar"}
-          </Button>
+          {/* Pregunta 4 */}
+          <div className="space-y-2">
+            <Label className="text-base font-semibold">
+              Si un especialista le invitara a participar en un estudio
+              profesional sobre miopía, ¿asistiría a las evaluaciones requeridas?
+            </Label>
+            {[
+              { label: "Sí", value: "si" },
+              { label: "No", value: "no" },
+              { label: "Dependería de las condiciones", value: "depende" },
+            ].map((o) => (
+              <div key={o.value} className="flex items-center space-x-3">
+                <Checkbox
+                  checked={studyInterest === o.value}
+                  onCheckedChange={() => setStudyInterest(o.value as any)}
+                />
+                <span className="text-sm text-muted-foreground">{o.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Pregunta 5 */}
+          <div className="space-y-2">
+            <Label className="text-base font-semibold">
+              ¿Qué tan dispuesto(a) estaría a asistir a más de una cita médica si
+              el estudio lo requiere?
+            </Label>
+            <Slider
+              min={1}
+              max={5}
+              step={1}
+              value={[multiVisitWillingness]}
+              onValueChange={(v) => setMultiVisitWillingness(v[0])}
+            />
+            <p className="text-xs text-muted-foreground">
+              {["Nada", "Poco", "Moderado", "Bastante", "Totalmente"][multiVisitWillingness - 1]}
+            </p>
+          </div>
+
+          {/* Pregunta 6 */}
+          <div className="space-y-2">
+            <Label className="text-base font-semibold">
+              ¿Qué factor influye más en su decisión de acudir o no a una
+              evaluación por miopía?
+            </Label>
+            {[
+              "Tiempo",
+              "Costo",
+              "Ubicación",
+              "Recomendación médica",
+              "No lo considero necesario",
+              "Otro",
+            ].map((o) => (
+              <div key={o} className="flex items-center space-x-3">
+                <Checkbox
+                  checked={mainFactor === o}
+                  onCheckedChange={() => setMainFactor(o)}
+                />
+                <span className="text-sm text-muted-foreground">{o}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-4">
+            <Button
+              className="w-full"
+              onClick={handleSubmit}
+              disabled={!isFormComplete}
+            >
+              Enviar y finalizar
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
