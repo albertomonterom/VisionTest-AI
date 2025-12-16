@@ -26,7 +26,6 @@ interface FeedbackModalProps {
 
 export const FeedbackModal = ({
   open,
-  onClose,
   onFinish,
 }: FeedbackModalProps) => {
   const [planDoctor, setPlanDoctor] =
